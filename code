@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Sinalização Viária</title>
+    <style>
+        :root {
+            /* Cores Setoriais */
+            --color-tinta: #e67e22;      /* Laranja */
+            --color-aspersao: #3498db;   /* Azul */
+            --color-extrudado: #2c3e50;  /* Cinza Escuro */
+            --color-cola: #9b59b6;       /* Roxo */
+            --color-laminado: #556b2f;   /* Verde Oliva (Novo Módulo) */
+            
+            --bg-body: #f4f7f6;
+            --bg-white: #ffffff;
+            --text-main: #333;
+            --text-muted: #777;
+            --border-radius: 12px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: transparent;
+        }
+
+        /* CABEÇALHO */
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        header h1 {
+            margin: 0;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        /* SISTEMA DE ABAS */
+        .tabs {
+            display: flex;
+            justify-content: space-between;
+            background: #e0e0e0;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            overflow: hidden;
+            padding: 4px 4px 0 4px;
+            flex-wrap: wrap; /* Permite quebra em telas pequenas */
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px 5px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #555;
+            transition: all 0.3s ease;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            min-width: 120px;
+        }
+
+        .tab-btn:hover {
+            background-color: rgba(255,255,255,0.5);
+            color: #000;
+        }
+
+        .tab-btn.active {
+            background-color: var(--bg-white);
+            color: #000;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+
+        /* Cores específicas para aba ativa */
+        .tab-btn[data-target="tinta"].active { border-top: 4px solid var(--color-tinta); color: var(--color-tinta); }
+        .tab-btn[data-target="aspersao"].active { border-top: 4px solid var(--color-aspersao); color: var(--color-aspersao); }
+        .tab-btn[data-target="extrudado"].active { border-top: 4px solid var(--color-extrudado); color: var(--color-extrudado); }
+        .tab-btn[data-target="cola"].active { border-top: 4px solid var(--color-cola); color: var(--color-cola); }
+        .tab-btn[data-target="laminado"].active { border-top: 4px solid var(--color-laminado); color: var(--color-laminado); }
+
+        /* CONTEÚDO DAS ABAS */
+        .tab-content {
+            background: var(--bg-white);
+            padding: 30px;
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            display: none; /* Escondido por padrão */
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* SEÇÃO DE INPUTS */
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            align-items: end;
+            margin-bottom: 30px;
+        }
+        
+        @media(max-width: 600px) {
+            .calculator-grid { grid-template-columns: 1fr; }
+            .exchange-icon { transform: rotate(90deg); margin: 10px 0; }
+        }
+
+        .input-wrapper label {
+            display: block;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        .input-wrapper input, .input-wrapper select {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1rem;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+            background-color: #fff;
+        }
+
+        .input-wrapper input:focus, .input-wrapper select:focus {
+            outline: none;
+            border-color: #aaa;
+        }
+
+        /* Cores de foco dinâmicas */
+        #tab-tinta input:focus { border-color: var(--color-tinta); }
+        #tab-aspersao input:focus { border-color: var(--color-aspersao); }
+        #tab-extrudado input:focus { border-color: var(--color-extrudado); }
+        #tab-cola input:focus { border-color: var(--color-cola); }
+        #tab-laminado input:focus, #tab-laminado select:focus { border-color: var(--color-laminado); }
+
+        .exchange-icon {
+            text-align: center;
+            color: #ccc;
+            font-size: 1.5rem;
+            padding-bottom: 10px;
+            user-select: none;
+        }
+
+        /* SEÇÃO DE RESULTADOS */
+        .results-panel {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 5px solid #ccc;
+        }
+        
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px dashed #e0e0e0;
+        }
+        .result-row:last-child { border-bottom: none; }
+
+        .res-label { font-size: 0.9rem; color: #555; }
+        .res-val { font-weight: 700; font-size: 1.1rem; color: #333; }
+        .res-highlight { font-size: 1.3rem; }
+
+        .note {
+            display: block;
+            margin-top: 10px;
+            font-size: 0.75rem;
+            color: #999;
+            text-align: right;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Calculadora de Materiais 🚩👷</h1>
+        <p>Selecione o material e insira os dados</p>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab('tinta', this)" data-target="tinta">
+            🎨 Tinta Acrílica
+        </button>
+        <button class="tab-btn" onclick="openTab('aspersao', this)" data-target="aspersao">
+            ♨️ Aspersão
+        </button>
+        <button class="tab-btn" onclick="openTab('extrudado', this)" data-target="extrudado">
+            🧤 Extrudado
+        </button>
+        <button class="tab-btn" onclick="openTab('laminado', this)" data-target="laminado">
+            📏 Cola Laminado
+        </button>
+        <button class="tab-btn" onclick="openTab('cola', this)" data-target="cola">
+            🚨 Dispositivos
+        </button>
+    </div>
+
+    <div id="tab-tinta" class="tab-content active">
+        <div class="calculator-grid">
+            <div class="input-wrapper">
+                <label>Área de Pintura (m²)</label>
+                <input type="number" id="tinta_area" placeholder="0" oninput="Calc.tinta('area')">
+            </div>
+            <div class="exchange-icon">⇄</div>
+            <div class="input-wrapper">
+                <label>Baldes (18 Litros)</label>
+                <input type="number" id="tinta_baldes" placeholder="0" oninput="Calc.tinta('balde')">
+            </div>
+        </div>
+
+        <div class="results-panel" style="border-left-color: var(--color-tinta);">
+            <div class="result-row">
+                <span class="res-label">Litros Totais:</span>
+                <span class="res-val" id="res_tinta_litros">0.00 L</span>
+            </div>
+            <div class="result-row">
+                <span class="res-label">Solvente (Latas):</span>
+                <span class="res-val res-highlight" style="color: var(--color-tinta);" id="res_tinta_solvente">0</span>
+            </div>
+            <span class="note">Base: 1 Balde (18L) rende 35m². Solvente: 0,20L/18L.</span>
+        </div>
+    </div>
+
+    <div id="tab-aspersao" class="tab-content">
+        <div class="calculator-grid">
+            <div class="input-wrapper">
+                <label>Área (m²)</label>
+                <input type="number" id="asp_area" placeholder="0" oninput="Calc.aspersao('area')">
+            </div>
+            <div class="exchange-icon">⇄</div>
+            <div class="input-wrapper">
+                <label>Peso Material (Kg)</label>
+                <input type="number" id="asp_kg" placeholder="0" oninput="Calc.aspersao('kg')">
+            </div>
+        </div>
+
+        <div class="results-panel" style="border-left-color: var(--color-aspersao);">
+            <div class="result-row">
+                <span class="res-label">Sacas Material (25kg):</span>
+                <span class="res-val res-highlight" style="color: var(--color-aspersao);" id="res_asp_sacas">0</span>
+            </div>
+            <div class="result-row">
+                <span class="res-label">Microesfera Drop-on (kg):</span>
+                <span class="res-val" id="res_asp_drop_kg">0.00 kg</span>
+            </div>
+            <div class="result-row">
+                <span class="res-label">Sacas Drop-on (25kg):</span>
+                <span class="res-val" id="res_asp_drop_sacas">0</span>
+            </div>
+            <span class="note">Base: 3kg/m² (Material) | 0.35kg/m² (Drop-on)</span>
+        </div>
+    </div>
+
+    <div id="tab-extrudado" class="tab-content">
+        <div class="calculator-grid">
+            <div class="input-wrapper">
+                <label>Área (m²)</label>
+                <input type="number" id="ext_area" placeholder="0" oninput="Calc.extrudado('area')">
+            </div>
+            <div class="exchange-icon">⇄</div>
+            <div class="input-wrapper">
+                <label>Peso Material (Kg)</label>
+                <input type="number" id="ext_kg" placeholder="0" oninput="Calc.extrudado('kg')">
+            </div>
+        </div>
+
+        <div class="results-panel" style="border-left-color: var(--color-extrudado);">
+            <div class="result-row">
+                <span class="res-label">Sacas Material (25kg):</span>
+                <span class="res-val res-highlight" style="color: var(--color-extrudado);" id="res_ext_sacas">0</span>
+            </div>
+            <div class="result-row">
+                <span class="res-label">Microesfera Drop-on (kg):</span>
+                <span class="res-val" id="res_ext_drop_kg">0.00 kg</span>
+            </div>
+            <div class="result-row">
+                <span class="res-label">Sacas Drop-on (25kg):</span>
+                <span class="res-val" id="res_ext_drop_sacas">0</span>
+            </div>
+            <span class="note">Base: 6kg/m² (Material) | 0.50kg/m² (Drop-on)</span>
+        </div>
+    </div>
+
+    <div id="tab-laminado" class="tab-content">
+        <div style="margin-bottom: 20px;">
+            <div class="input-wrapper">
+                <label>Selecione o Tipo de Rolo Aplicado</label>
+                <select id="lam_tipo" onchange="Calc.laminado('area')">
+                    <option value="0.20">Rolo 25x0,1m (Consumo: 0,20 kg/m²)</option>
+                    <option value="0.30">Rolo 25x0,2m (Consumo: 0,30 kg/m²)</option>
+                    <option value="0.40">Rolo 25x0,3m (Consumo: 0,40 kg/m²)</option>
+                    <option value="0.50">Rolo 25x0,4m (Consumo: 0,50 kg/m²)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="calculator-grid">
+            <div class="input-wrapper">
+                <label>Área de Laminado (m²)</label>
+                <input type="number" id="lam_area" placeholder="0" oninput="Calc.laminado('area')">
+            </div>
+            <div class="exchange-icon">⇄</div>
+            <div class="input-wrapper">
+                <label>Peso Cola (Kg)</label>
+                <input type="number" id="lam_kg" placeholder="0" oninput="Calc.laminado('kg')">
+            </div>
+        </div>
+
+        <div class="results-panel" style="border-left-color: var(--color-laminado);">
+            <div class="result-row">
+                <span class="res-label">Latas de Cola (14kg):</span>
+                <span class="res-val res-highlight" style="color: var(--color-laminado);" id="res_lam_latas">0</span>
+            </div>
+            <span class="note">Lata padrão de 14kg. Consumo varia conforme largura do rolo.</span>
+        </div>
+    </div>
+
+    <div id="tab-cola" class="tab-content">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px;">
+            <div class="input-wrapper">
+                <label>Tachas (Un)</label>
+                <input type="number" id="cola_tacha" placeholder="0" oninput="Calc.cola()">
+            </div>
+            <div class="input-wrapper">
+                <label>Tachões (Un)</label>
+                <input type="number" id="cola_tachao" placeholder="0" oninput="Calc.cola()">
+            </div>
+            <div class="input-wrapper">
+                <label>Segregadores (Un)</label>
+                <input type="number" id="cola_seg" placeholder="0" oninput="Calc.cola()">
+            </div>
+        </div>
+
+        <div class="results-panel" style="border-left-color: var(--color-cola);">
+            <div class="result-row">
+                <span class="res-label">Peso Total Cola:</span>
+                <span class="res-val" id="res_cola_kg">0.00 kg</span>
+            </div>
+            <div class="result-row">
+                <span class="res-label">Latas (5kg):</span>
+                <span class="res-val res-highlight" style="color: var(--color-cola);" id="res_cola_latas">0</span>
+            </div>
+            <span class="note">Fatores: Tacha(0,1kg), Tachão(0,25kg), Segregador(0,5kg)</span>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- LÓGICA DE ABAS ---
+    function openTab(tabName, btnElement) {
+        // Esconde todos os conteúdos
+        const contents = document.getElementsByClassName('tab-content');
+        for (let i = 0; i < contents.length; i++) {
+            contents[i].classList.remove('active');
+        }
+
+        // Remove classe ativa de todos os botões
+        const btns = document.getElementsByClassName('tab-btn');
+        for (let i = 0; i < btns.length; i++) {
+            btns[i].classList.remove('active');
+        }
+
+        // Ativa o selecionado
+        document.getElementById('tab-' + tabName).classList.add('active');
+        btnElement.classList.add('active');
+    }
+
+    // --- LÓGICA DE CÁLCULO ---
+    const Calc = {
+        fmt: (n) => isNaN(n) ? '0.00' : parseFloat(n).toFixed(2),
+        ceil: (n) => isNaN(n) ? 0 : Math.ceil(n),
+        val: (id) => parseFloat(document.getElementById(id).value) || 0,
+
+        tinta: function(mode) {
+            let area = this.val('tinta_area');
+            let balde = this.val('tinta_baldes');
+            const RENDIMENTO = 35.0; 
+
+            if (mode === 'area') {
+                balde = area / RENDIMENTO;
+                document.getElementById('tinta_baldes').value = area ? balde.toFixed(2) : '';
+            } else {
+                area = balde * RENDIMENTO;
+                document.getElementById('tinta_area').value = balde ? area.toFixed(2) : '';
+            }
+
+            document.getElementById('res_tinta_litros').innerText = this.fmt(balde * 18) + ' L';
+            document.getElementById('res_tinta_solvente').innerText = this.ceil(balde * 0.20);
+        },
+
+        aspersao: function(mode) {
+            let area = this.val('asp_area');
+            let kg = this.val('asp_kg');
+            const CONSUMO = 3.0; 
+
+            if (mode === 'area') {
+                kg = area * CONSUMO;
+                document.getElementById('asp_kg').value = area ? kg.toFixed(2) : '';
+            } else {
+                area = kg / CONSUMO;
+                document.getElementById('asp_area').value = kg ? area.toFixed(2) : '';
+            }
+
+            let dropKg = area * 0.35;
+            document.getElementById('res_asp_sacas').innerText = this.ceil(kg / 25);
+            document.getElementById('res_asp_drop_kg').innerText = this.fmt(dropKg) + ' kg';
+            document.getElementById('res_asp_drop_sacas').innerText = this.ceil(dropKg / 25);
+        },
+
+        extrudado: function(mode) {
+            let area = this.val('ext_area');
+            let kg = this.val('ext_kg');
+            const CONSUMO = 6.0; 
+
+            if (mode === 'area') {
+                kg = area * CONSUMO;
+                document.getElementById('ext_kg').value = area ? kg.toFixed(2) : '';
+            } else {
+                area = kg / CONSUMO;
+                document.getElementById('ext_area').value = kg ? area.toFixed(2) : '';
+            }
+
+            let dropKg = area * 0.50;
+            document.getElementById('res_ext_sacas').innerText = this.ceil(kg / 25);
+            document.getElementById('res_ext_drop_kg').innerText = this.fmt(dropKg) + ' kg';
+            document.getElementById('res_ext_drop_sacas').innerText = this.ceil(dropKg / 25);
+        },
+
+        // --- NOVO CÁLCULO DE LAMINADO ---
+        laminado: function(mode) {
+            let area = this.val('lam_area');
+            let kg = this.val('lam_kg');
+            // Obtém o fator de consumo selecionado no dropdown (0.2, 0.3, 0.4 ou 0.5)
+            let fatorConsumo = parseFloat(document.getElementById('lam_tipo').value);
+            const PESO_LATA = 14.0;
+
+            if (mode === 'area') {
+                kg = area * fatorConsumo;
+                document.getElementById('lam_kg').value = area ? kg.toFixed(2) : '';
+            } else {
+                area = kg / fatorConsumo;
+                document.getElementById('lam_area').value = kg ? area.toFixed(2) : '';
+            }
+
+            // Cálculo das latas
+            document.getElementById('res_lam_latas').innerText = this.ceil(kg / PESO_LATA);
+        },
+
+        cola: function() {
+            let tacha = this.val('cola_tacha');
+            let tachao = this.val('cola_tachao');
+            let seg = this.val('cola_seg');
+
+            let totalKg = (tacha * 0.10) + (tachao * 0.25) + (seg * 0.50);
+
+            document.getElementById('res_cola_kg').innerText = this.fmt(totalKg) + ' kg';
+            document.getElementById('res_cola_latas').innerText = this.ceil(totalKg / 5);
+        }
+    };
+</script>
+
+</body>
+</html>
